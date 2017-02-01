@@ -1,7 +1,8 @@
 # Grommet full project
 
-This project has an todo list with a dashboard that illustrates basic usage
-of grommet.
+This is a demo of a business dashboard wired through to (imaginary, but
+modelled) hardware underneath, so we can demo the link between increased
+load on the business and spinning up new VMs and hardware underneath.
 
 To run this application, execute the following commands:
 
