@@ -4,18 +4,23 @@ import Heading from 'grommet/components/Heading';
 //import List from 'grommet/components/List';
 //import ListItem from 'grommet/components/ListItem';
 import Meter from 'grommet/components/Meter';
-//import AnnotatedMeter from 'grommet-addons/components/AnnotatedMeter';
+import Menu from 'grommet/components/Menu';
 import Value from 'grommet/components/Value';
 //import Status from 'grommet/components/icons/Status';
 import Section from 'grommet/components/Section';
 import Chart, {Axis,Base, Layers, Bar} from 'grommet/components/chart/Chart';
-//import Card from 'grommet/components/Card';
+import Box from 'grommet/components/Box';
 import Paragraph from 'grommet/components/Paragraph';
 import Tiles from 'grommet/components/Tiles';
 import Tile from 'grommet/components/Tile';
+import Header from 'grommet/components/Header';
+import Title from 'grommet/components/Title';
+import Anchor from 'grommet/components/Anchor';
+
 import LinkUp from 'grommet/components/icons/base/LinkUp';
 import LinkDown from 'grommet/components/icons/base/LinkDown';
 import Checkmark from 'grommet/components/icons/base/Checkmark';
+import Actions from 'grommet/components/icons/base/Actions';
 
 export default class BusinessDashboardApp extends Component {
 
@@ -26,18 +31,6 @@ export default class BusinessDashboardApp extends Component {
         {
           status: 'critical',
           item: 'Pay my rent.'
-        },
-        {
-          status: 'ok',
-          item: 'Walk with my dog this morning.'
-        },
-        {
-          status: 'warning',
-          item: 'San Jose Earthquakes game is tomorrow.'
-        },
-        {
-          status: 'ok',
-          item: 'Review Pull Request #45.'
         }
       ]
     };
@@ -47,8 +40,19 @@ export default class BusinessDashboardApp extends Component {
 
     return (
       <Section colorIndex='light-2'>
-        <Section label="Status" textSize="large" pad="small">
-          <Paragraph size="xlarge">Your overall system is Stable</Paragraph>
+        <Section label="Status">
+          <Header>
+            <Title>Your overall system is Stable</Title>
+            <Box flex={true} justify='end'
+            direction='row'
+            responsive={false}>
+              <Menu icon={<Actions />} dropAlign={{"right": "right"}}>
+                <Anchor href='#' className='active'>First</Anchor>
+                <Anchor href='#'>Second</Anchor>
+                <Anchor href='#'>Third</Anchor>
+              </Menu>
+            </Box>
+          </Header>
         </Section>
         <Tiles maxCount='3' size='medium' masonry='true'>
           <Section basis='1/3' align="center" pad="small" separator="top">
