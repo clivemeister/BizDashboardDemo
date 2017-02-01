@@ -27,16 +27,37 @@ export default class BusinessDashboardApp extends Component {
   constructor () {
     super();
     this.state = {
-      tasks: [
-        {
-          status: 'critical',
-          item: 'Pay my rent.'
-        }
-      ]
+      containers: 946,
+      VMs: 72,
+      serversUsed: 16,
+      serversLive: 24,
+      usersOnline: 12345,
+      msecs: 734
     };
+    this.updateInfraForUserLoad( 12345 );
+    console.log('user load in constructor ',this.state.usersOnline);
+  }
+
+  getRandomInt(min,max) {
+    return Math.floor(Math.random() * (max-min+1))+min;
+  }
+
+  updateInfraForUserLoad(newUserCount) {
+    let newContainerCount = Math.floor(newUserCount / this.getRandomInt(11,15));
+    let newVMCount = Math.floor(newContainerCount / this.getRandomInt(11,15));
+    this.setState( {usersOnline: newUserCount, containers: newContainerCount, VMs: newVMCount} );
+  }
+
+  changeUsers(delta) {
+    console.log('changeUsers ',delta);
+    let newUserCount = this.state.usersOnline + delta;
+    this.updateInfraForUserLoad( newUserCount );
   }
 
   render () {
+    let moreUsers = this.changeUsers.bind(this, this.getRandomInt(250,500));
+    let lessUsers = this.changeUsers.bind(this, this.getRandomInt(-500,-250));
+    console.log('rendering');
 
     return (
       <Section colorIndex='light-2'>
@@ -47,9 +68,9 @@ export default class BusinessDashboardApp extends Component {
             direction='row'
             responsive={false}>
               <Menu icon={<Actions />} dropAlign={{"right": "right"}}>
-                <Anchor href='#' className='active'>First</Anchor>
-                <Anchor href='#'>Second</Anchor>
-                <Anchor href='#'>Third</Anchor>
+                <Anchor icon={<LinkUp />} animateIcon={true} onClick={moreUsers} href='#' className='active'>More users</Anchor>
+                <Anchor icon={<LinkDown />} animateIcon={true} onClick={lessUsers} href='#'>Less users</Anchor>
+                <Anchor href='#'>Reset</Anchor>
               </Menu>
             </Box>
           </Header>
@@ -58,22 +79,22 @@ export default class BusinessDashboardApp extends Component {
           <Section basis='1/3' align="center" pad="small" separator="top">
             <Heading tag="h3">Capacity</Heading>
             <Paragraph>
-              <Value value='894' label='Hosts' trendIcon={<LinkUp />} /> of
-              <Value value='1000' label='possible' trendIcon={<Checkmark/>} />
+              <Value value={this.state.containers} label='Containers' trendIcon={<LinkUp />} /> on
+              <Value value={this.state.VMs} label='VMs' trendIcon={<Checkmark/>} />
             </Paragraph>
             <Paragraph>
-              <Value value='10423' label='VMs' trendIcon={<LinkUp />} /> of
-              <Value value='13000' label='potential' trendIcon={<Checkmark/>} />
+              <Value value={this.state.serversUsed} label='Servers' trendIcon={<LinkUp />} /> of
+              <Value value={this.state.serversLive} label='live' trendIcon={<Checkmark/>} />
             </Paragraph>
           </Section>
           <Section basis='1/3' align="center" separator="top">
             <Heading tag="h3">Health</Heading>
             <Paragraph>
-              <Value value='12' label='open alerts' trendIcon={<LinkDown />} />
-              . . .
-              <Value value='45' label='resolved' trendIcon={<LinkUp />} />
+              <Value value={this.state.usersOnline} label='users' trendIcon={<LinkDown />} />
+              online with latency
+              <Value value={this.state.msecs} label='msecs' trendIcon={<LinkUp />} />
             </Paragraph>
-            <Paragraph size="large">over the last 24 hours</Paragraph>
+            <Paragraph size="large">over the last 5 minutes</Paragraph>
           </Section>
           <Section basis='1/3' align="center" separator="top">
             <Heading tag="h3">Performance</Heading>
