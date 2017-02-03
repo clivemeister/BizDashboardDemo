@@ -27,30 +27,63 @@ export default class BusinessDashboardApp extends Component {
   constructor () {
     super();
     this.state = {
-      containers: 946,
+      containers: 288,
       VMs: 72,
-      serversUsed: 16,
-      serversLive: 24,
-      usersOnline: 12345,
-      msecs: 734
+      serversUsed: 6,
+      serversLive: 12,
+      reqsPerSec: 960,
+      msecs: 734,
+      GHz: 2271,
+      date: new Date()
     };
     this.updateInfraForUserLoad( 12345 );
-    console.log('user load in constructor ',this.state.usersOnline);
+    console.log('user load in constructor ',this.state.reqsPerSec);
+  }
+
+  componentDidMount() {
+    this.timerId = setInterval(
+      () => this.tick(), 5000
+    );
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.timerId);
   }
 
   getRandomInt(min,max) {
     return Math.floor(Math.random() * (max-min+1))+min;
   }
 
-  updateInfraForUserLoad(newUserCount) {
-    let newContainerCount = Math.floor(newUserCount / this.getRandomInt(11,15));
-    let newVMCount = Math.floor(newContainerCount / this.getRandomInt(11,15));
-    this.setState( {usersOnline: newUserCount, containers: newContainerCount, VMs: newVMCount} );
+  tick() {
+    let newGHz = this.getRandomInt(2250,2299);
+    this.setState({
+      date: new Date(), GHz: newGHz
+    });
+    this.updateInfraForUserLoad( Math.max( 411, (this.state.reqsPerSec + this.getRandomInt(-40,+40)) ) );
+
+  }
+
+  updateInfraForUserLoad(newReqCount) {
+    let reqPerContainerPerSec = newReqCount / this.state.containers;
+    let newMsecs = Math.floor( 1000 /(10 - reqPerContainerPerSec));
+    console.log('newReqCount=',newReqCount,' reqPerContainerPerSec=',reqPerContainerPerSec,' newMsecs=',newMsecs);
+    if (newMsecs <=0) {
+      newMsecs = 5000;   //  if we go above 5000 msecs resonse, cap at that - we'll be dropping requests by this point IRL!
+    }
+
+    let newContainerCount = this.state.containers;
+    if (newMsecs > 500) {
+      newContainerCount += 10;
+    } else if (newMsecs <300) {
+      newContainerCount -= 10;
+    }
+    let newVMCount = Math.floor(newContainerCount / 4);
+    this.setState( {reqsPerSec: newReqCount, containers: newContainerCount, VMs: newVMCount, msecs: newMsecs} );
   }
 
   changeUsers(delta) {
-    console.log('changeUsers ',delta);
-    let newUserCount = this.state.usersOnline + delta;
+    let newUserCount = this.state.reqsPerSec + delta;
+    console.log('changeUsers by ',delta,' to ',newUserCount);
     this.updateInfraForUserLoad( newUserCount );
   }
 
@@ -64,6 +97,7 @@ export default class BusinessDashboardApp extends Component {
         <Section label="Status">
           <Header>
             <Title>Your overall system is Stable</Title>
+            <p>It is {this.state.date.toLocaleTimeString()}</p>
             <Box flex={true} justify='end'
             direction='row'
             responsive={false}>
@@ -90,11 +124,11 @@ export default class BusinessDashboardApp extends Component {
           <Section basis='1/3' align="center" separator="top">
             <Heading tag="h3">Health</Heading>
             <Paragraph>
-              <Value value={this.state.usersOnline} label='users' trendIcon={<LinkDown />} />
+              <Value value={this.state.reqsPerSec} label='users' trendIcon={<LinkDown />} />
               online with latency
               <Value value={this.state.msecs} label='msecs' trendIcon={<LinkUp />} />
             </Paragraph>
-            <Paragraph size="large">over the last 5 minutes</Paragraph>
+            <Paragraph size="large">over the last 5 seconds</Paragraph>
           </Section>
           <Section basis='1/3' align="center" separator="top">
             <Heading tag="h3">Performance</Heading>
@@ -108,7 +142,7 @@ export default class BusinessDashboardApp extends Component {
             <Heading tag="h3">Resource Capacity</Heading>
             <Tiles>
               <Tile>
-                <Meter type='circle' size='small' label={<Value value={2273} units='GHz'/>} value={2278} max={2800} threshold={2600}/> Compute
+                <Meter type='circle' size='small' label={<Value value={this.state.GHz} units='GHz'/>} value={this.state.GHz} max={2800} threshold={2600}/> Compute
               </Tile>
               <Tile>
                 <Meter type='circle' size='small' label={<Value value={978} units='GB'/>} value={978} max={1200} threshold={1050}/> Memory
