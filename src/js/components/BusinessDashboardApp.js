@@ -8,7 +8,7 @@ import Menu from 'grommet/components/Menu';
 import Value from 'grommet/components/Value';
 //import Status from 'grommet/components/icons/Status';
 import Section from 'grommet/components/Section';
-import Chart, {Axis,Base, Layers, Bar} from 'grommet/components/chart/Chart';
+import Chart, {Axis,Base, Layers, Bar, Line} from 'grommet/components/chart/Chart';
 import Box from 'grommet/components/Box';
 import Paragraph from 'grommet/components/Paragraph';
 import Tiles from 'grommet/components/Tiles';
@@ -34,7 +34,9 @@ export default class BusinessDashboardApp extends Component {
       reqsPerSec: 960,
       msecs: 734,
       GHz: 2271,
-      date: new Date()
+      date: new Date(),
+      perfHistory: [65,67,70,78,75,79,80,82,79,81,84,85,83,80,82,84],
+      VMHistory: [50,55,56,73,58,68,90,87,79,86,63,56,67,80,65,66]
     };
     this.updateInfraForUserLoad( 12345 );
     console.log('user load in constructor ',this.state.reqsPerSec);
@@ -60,7 +62,7 @@ export default class BusinessDashboardApp extends Component {
       date: new Date(), GHz: newGHz
     });
     this.updateInfraForUserLoad( Math.max( 411, (this.state.reqsPerSec + this.getRandomInt(-40,+40)) ) );
-
+    this.updatePerfHistory(this.state.msecs,this.state.VMs);
   }
 
   updateInfraForUserLoad(newReqCount) {
@@ -72,13 +74,26 @@ export default class BusinessDashboardApp extends Component {
     }
 
     let newContainerCount = this.state.containers;
-    if (newMsecs > 500) {
+    if (newMsecs > 500) {  // add more containers if response time >500msecs
       newContainerCount += 10;
-    } else if (newMsecs <300) {
+    } else if (newMsecs <300) {   // cut back on containers if response time <300msecs
       newContainerCount -= 10;
     }
-    let newVMCount = Math.floor(newContainerCount / 4);
-    this.setState( {reqsPerSec: newReqCount, containers: newContainerCount, VMs: newVMCount, msecs: newMsecs} );
+    let newVMCount = Math.floor(newContainerCount / 4);   // scale the VMs to ensure we can run all the containers
+    let newServerCount = Math.max(4,Math.floor(newVMCount / 15));  // scale the number of physical servers to number of VMs, with a minimum of 4
+    newServerCount = Math.min(this.state.serversLive,newServerCount);   // no more than max number of servers
+    this.setState( {reqsPerSec: newReqCount, containers: newContainerCount, VMs: newVMCount, serversUsed: newServerCount, msecs: newMsecs}
+                 );
+  }
+
+  updatePerfHistory(currentResponseTime,currentVMcount) {
+    let newPerfHistory = this.state.perfHistory;
+    newPerfHistory.push(Math.min(Math.floor(currentResponseTime/50),100)); // add new indicator to end of list
+    newPerfHistory.shift(); // take away the first element
+    let newVMHistory = this.state.VMHistory;
+    newVMHistory.push(math.min(currentVMcount,this.state.serversLive*15));
+    newVMHistory.shift();
+    this.setState( {perfHistory:newPerfHistory, VMHistory: newVMHistory} );
   }
 
   changeUsers(delta) {
@@ -158,7 +173,8 @@ export default class BusinessDashboardApp extends Component {
               <Axis vertical={true} count={3} ticks={true} labels={[{label: "0%", index:0},{label:'50%',index:1},{label:"100%",index:2}]}/>
               <Base height='medium' width='medium'/>
               <Layers>
-                <Bar values={[70,78,75,79,80,82,79,81,84,85,83,80,82,84]}/>
+                <Bar values={this.state.perfHistory}/>
+                <Line values={this.state.VMHistory} colorIndex='accent-1'/>
               </Layers>
             </Chart>
           </Section>
