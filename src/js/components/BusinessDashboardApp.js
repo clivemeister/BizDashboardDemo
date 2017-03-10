@@ -21,22 +21,27 @@ import LinkUp from 'grommet/components/icons/base/LinkUp';
 import LinkDown from 'grommet/components/icons/base/LinkDown';
 import Checkmark from 'grommet/components/icons/base/Checkmark';
 import Actions from 'grommet/components/icons/base/Actions';
+import CheckBox from 'grommet/components/CheckBox';
 
 export default class BusinessDashboardApp extends Component {
 
   constructor () {
     super();
     this.state = {
-      containers: 288,
-      VMs: 72,
-      serversUsed: 6,
-      serversLive: 12,
+      containers: 120,
+      VMs: 30,
+      serversUsed: 3,
+      serversLive: 6,
       reqsPerSec: 960,
       msecs: 734,
-      GHz: 2271,
+      GHz: 75,
+      GB_ram: 240,
+      TB_disk: 50,
+      isSynergy: false,
       date: new Date(),
-      perfHistory: [65,67,70,78,75,79,80,82,79,81,84,85,83,80,82,84],
-      VMHistory: [50,55,56,73,58,68,90,87,79,86,63,56,67,80,65,66]
+      perfHistory: [35,37,30,28,25,29,30,32,39,31,28,25,23,30,32,28],
+      VMHistory:   [25,25,26,23,18,18,19,17,19,26,23,26,27,20,15,16],
+      loadHistory: [46,51,49,47,48,47,49,41,39,41,47,48,41,39,41,40]
     };
     this.updateInfraForUserLoad( 12345 );
     console.log('user load in constructor ',this.state.reqsPerSec);
@@ -57,12 +62,14 @@ export default class BusinessDashboardApp extends Component {
   }
 
   tick() {
-    let newGHz = this.getRandomInt(2250,2299);
+    let newGHz = this.state.VMs * 2.5;
+    let newGB = this.state.VMs * 31;
+    let newTB = this.state.VMs * 1.5;
     this.setState({
-      date: new Date(), GHz: newGHz
+      date: new Date(), GHz: newGHz, GB_ram: newGB, TB_disk: newTB
     });
     this.updateInfraForUserLoad( Math.max( 411, (this.state.reqsPerSec + this.getRandomInt(-40,+40)) ) );
-    this.updatePerfHistory(this.state.msecs,this.state.VMs);
+    this.updatePerfHistory(this.state.msecs,this.state.VMs,this.state.reqsPerSec);
   }
 
   updateInfraForUserLoad(newReqCount) {
@@ -75,25 +82,43 @@ export default class BusinessDashboardApp extends Component {
 
     let newContainerCount = this.state.containers;
     if (newMsecs > 500) {  // add more containers if response time >500msecs
-      newContainerCount += 10;
+      if (newContainerCount < (10 + 4*this.state.VMs) ) {
+        // scale to more containers only if still headroom in current number of VMs
+        // this happens if desired containers is no more than 10 above limit set by VM count
+        newContainerCount += 10;
+      }
     } else if (newMsecs <300) {   // cut back on containers if response time <300msecs
       newContainerCount -= 10;
     }
+
     let newVMCount = Math.floor(newContainerCount / 4);   // scale the VMs to ensure we can run all the containers
-    let newServerCount = Math.max(4,Math.floor(newVMCount / 15));  // scale the number of physical servers to number of VMs, with a minimum of 4
+
+    let newServerCount = Math.max(3,Math.floor(newVMCount / 15));  // scale the number of physical servers to number of VMs, with a minimum of 3
+    if (newServerCount > this.state.serversUsed) {
+      // we want to be scaling up in server count, based on number of VMs used
+      if (!this.state.isSynergy) {
+        // but synergy server scaling isn't turned on, so we can't do this - so scale it all back to current usage
+        newServerCount = this.state.serversUsed;
+        newVMCount = Math.min( newVMCount, Math.floor(newServerCount * 15));
+      }
+    }
     newServerCount = Math.min(this.state.serversLive,newServerCount);   // no more than max number of servers
     this.setState( {reqsPerSec: newReqCount, containers: newContainerCount, VMs: newVMCount, serversUsed: newServerCount, msecs: newMsecs}
                  );
   }
 
-  updatePerfHistory(currentResponseTime,currentVMcount) {
+  updatePerfHistory(currentResponseTime,currentVMcount,currentUserCount) {
     let newPerfHistory = this.state.perfHistory;
     newPerfHistory.push(Math.min(Math.floor(currentResponseTime/50),100)); // add new indicator to end of list
     newPerfHistory.shift(); // take away the first element
     let newVMHistory = this.state.VMHistory;
-    newVMHistory.push(math.min(currentVMcount,this.state.serversLive*15));
+    newVMHistory.push(Math.min(currentVMcount,this.state.serversLive*15));
     newVMHistory.shift();
-    this.setState( {perfHistory:newPerfHistory, VMHistory: newVMHistory} );
+    let newLoadHistory = this.state.loadHistory;
+    newLoadHistory.push(currentUserCount/33);
+    newLoadHistory.shift();
+    this.setState( {perfHistory:newPerfHistory, VMHistory: newVMHistory, loadHistory: newLoadHistory} );
+    //  console.log('Updated perf hist ',newPerfHistory);
   }
 
   changeUsers(delta) {
@@ -102,10 +127,24 @@ export default class BusinessDashboardApp extends Component {
     this.updateInfraForUserLoad( newUserCount );
   }
 
+  // this function handles the button which switches on and off the Synergy server scaling simulation
+  handleChangeToSynergy() {
+    if (this.state.isSynergy) {
+      // currently synergy scaling is on, so turn it off
+      console.log('turning Synergy scaling off ' );
+      this.setState( {isSynergy: false} );
+    } else {
+      console.log('turning Synergy scaling on ' );
+      this.setState( {isSynergy: true} );
+    }
+  }
+
   render () {
     let moreUsers = this.changeUsers.bind(this, this.getRandomInt(250,500));
     let lessUsers = this.changeUsers.bind(this, this.getRandomInt(-500,-250));
-    console.log('rendering');
+    let changeSynergyState = this.handleChangeToSynergy.bind(this);
+
+    console.log('rendering at ',this.state.date);
 
     return (
       <Section colorIndex='light-2'>
@@ -135,6 +174,9 @@ export default class BusinessDashboardApp extends Component {
               <Value value={this.state.serversUsed} label='Servers' trendIcon={<LinkUp />} /> of
               <Value value={this.state.serversLive} label='live' trendIcon={<Checkmark/>} />
             </Paragraph>
+            <center>
+              <CheckBox label='Enable Synergy server scaling!' toggle={true} disabled={false} onChange={changeSynergyState}/>
+            </center>
           </Section>
           <Section basis='1/3' align="center" separator="top">
             <Heading tag="h3">Health</Heading>
@@ -143,7 +185,7 @@ export default class BusinessDashboardApp extends Component {
               online with latency
               <Value value={this.state.msecs} label='msecs' trendIcon={<LinkUp />} />
             </Paragraph>
-            <Paragraph size="large">over the last 5 seconds</Paragraph>
+            <Paragraph size="large">over the last few seconds</Paragraph>
           </Section>
           <Section basis='1/3' align="center" separator="top">
             <Heading tag="h3">Performance</Heading>
@@ -157,13 +199,13 @@ export default class BusinessDashboardApp extends Component {
             <Heading tag="h3">Resource Capacity</Heading>
             <Tiles>
               <Tile>
-                <Meter type='circle' size='small' label={<Value value={this.state.GHz} units='GHz'/>} value={this.state.GHz} max={2800} threshold={2600}/> Compute
+                <Meter type='circle' size='small' label={<Value value={this.state.GHz} units='GHz'/>} value={this.state.GHz} max={250} threshold={225}/> Compute
               </Tile>
               <Tile>
-                <Meter type='circle' size='small' label={<Value value={978} units='GB'/>} value={978} max={1200} threshold={1050}/> Memory
+                <Meter type='circle' size='small' label={<Value value={this.state.GB_ram} units='GB'/>} value={this.state.GB_ram} max={3000} threshold={2750}/> Memory
               </Tile>
               <Tile>
-                <Meter type='circle' size='small' label={<Value value={1168} units='TB'/>} value={1168} max={1600} threshold={1400}/> Disk
+                <Meter type='circle' size='small' label={<Value value={this.state.TB_disk} units='TB'/>} value={this.state.TB_disk} max={500} threshold={400}/> Disk
               </Tile>
             </Tiles>
           </Section>
@@ -173,8 +215,9 @@ export default class BusinessDashboardApp extends Component {
               <Axis vertical={true} count={3} ticks={true} labels={[{label: "0%", index:0},{label:'50%',index:1},{label:"100%",index:2}]}/>
               <Base height='medium' width='medium'/>
               <Layers>
-                <Bar values={this.state.perfHistory}/>
-                <Line values={this.state.VMHistory} colorIndex='accent-1'/>
+                <Bar values={this.state.VMHistory}/>
+                <Line values={this.state.perfHistory} colorIndex='accent-1'/>
+                <Line values={this.state.loadHistory} colorIndex='graph-2'/>
               </Layers>
             </Chart>
           </Section>
